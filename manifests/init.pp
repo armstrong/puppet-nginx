@@ -1,16 +1,26 @@
 class nginx {
     Exec { path => "/usr/local/bin:/usr/bin:/bin" }
 
-    file { "/etc/apt/sources.list.d/nginx.list":
-        ensure => "present",
-        source => "puppet:///modules/nginx/sources.list",
+    file { "/tmp/nginx-install/":
+        ensure => "directory",
+        source => "puppet:///modules/nginx/install/",
+        recurse => true,
     }
 
-    exec { "sudo apt-get update":
-        require => File["/etc/apt/sources.list.d/nginx.list"],
+    file { "/tmp/nginx-install/install.sh":
+        ensure => "file",
+        mode => "700",
+        source => "puppet:///modules/nginx/install/install.sh",
     }
         
-    exec { "sudo apt-get install -y --allow-unauthenticated nginx":
-        require => Exec["sudo apt-get update"],
+    exec { "nginx dependencies":
+        command => "sudo apt-get build-dep -y nginx",
+    }
+
+    exec { "sudo sh -c 'cd /tmp/nginx-install/ && ./install.sh'":
+        require => [
+            File["/tmp/nginx-install/install.sh"],
+            Exec["nginx dependencies"],
+        ],
     }
 }
